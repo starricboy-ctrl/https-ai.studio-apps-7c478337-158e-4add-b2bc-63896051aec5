@@ -1,0 +1,6 @@
+{
+  "name": "FEC Studios TV",
+  "description": "Creator studio and viral growth booster to grow followers, views, likes, and watch hours with campaigns, creator exchange, and SEO optimization tools.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

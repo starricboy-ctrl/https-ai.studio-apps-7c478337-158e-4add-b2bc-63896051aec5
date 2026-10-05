@@ -1,0 +1,454 @@
+package com.example.ui.components
+
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.widget.Toast
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Assessment
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.HourglassTop
+import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.filled.Verified
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.data.model.Campaign
+import com.example.data.model.UserStats
+import com.example.ui.theme.AmberBright
+import com.example.ui.theme.AmberGold
+import com.example.ui.theme.CyanBright
+import com.example.ui.theme.CyanNeon
+import com.example.ui.theme.EmeraldSuccess
+import com.example.ui.theme.PinkNeon
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CreatorAnalyticsReportSheet(
+    userStats: UserStats,
+    campaigns: List<Campaign>,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val context = LocalContext.current
+
+    val watchHoursGoal = 4000f
+    val watchHoursProgress = (userStats.currentMonetizationWatchHours / watchHoursGoal).coerceIn(0f, 1f)
+    val remainingHours = (watchHoursGoal - userStats.currentMonetizationWatchHours).coerceAtLeast(0f)
+
+    val subsGoal = 1000
+    val subsProgress = (userStats.currentSubscribers.toFloat() / subsGoal).coerceIn(0f, 1f)
+    val remainingSubs = (subsGoal - userStats.currentSubscribers).coerceAtLeast(0)
+
+    val overallReadiness = (((watchHoursProgress * 0.6f) + (subsProgress * 0.4f)) * 100).toInt()
+
+    fun copyReportSummary() {
+        val summary = """
+            📊 FEC Studios TV - Creator Growth & Monetization Report
+            --------------------------------------------------------
+            Channel: ${userStats.channelName} (${userStats.channelNiche})
+            Monetization Readiness: $overallReadiness%
+            
+            ⏱️ Public Watch Hours: ${"%.1f".format(userStats.currentMonetizationWatchHours)} / 4,000 hrs (${"%.1f".format(watchHoursProgress * 100)}%)
+            • Remaining: ${"%.0f".format(remainingHours)} hrs
+            
+            👥 Subscribers: ${userStats.currentSubscribers} / 1,000 (${(subsProgress * 100).toInt()}%)
+            • Remaining: $remainingSubs subs
+            
+            🚀 Community Boost Impact:
+            • Views Boosted: ${userStats.totalViewsBoosted}
+            • Watch Hours Delivered: ${"%.1f".format(userStats.totalWatchHoursBoosted)} hrs
+            • Likes Gained: ${userStats.totalLikesBoosted}
+            • Active Campaigns: ${campaigns.count { it.status.name == "ACTIVE" }}
+            
+            Generated by FEC Studios TV Growth Engine
+        """.trimIndent()
+
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clip = ClipData.newPlainText("Creator Growth Report", summary)
+        clipboard.setPrimaryClip(clip)
+        Toast.makeText(context, "Report copied to clipboard!", Toast.LENGTH_SHORT).show()
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface,
+        modifier = modifier.testTag("creator_analytics_report_sheet")
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 32.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Header with Title & Action Icons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(42.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(
+                                Brush.linearGradient(listOf(CyanNeon, AmberGold))
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Assessment,
+                            contentDescription = "Reports",
+                            tint = Color.Black,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Column {
+                        Text(
+                            text = "Channel Performance Report",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "FEC Studios TV • Audit & Forecast",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = CyanBright
+                        )
+                    }
+                }
+
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.testTag("close_reports_btn")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            // Executive Summary Card (Monetization Readiness)
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "YouTube Partner Readiness",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "$overallReadiness% Qualified",
+                                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold),
+                                color = EmeraldSuccess
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(EmeraldSuccess.copy(alpha = 0.15f))
+                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Verified,
+                                    contentDescription = null,
+                                    tint = EmeraldSuccess,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "In Good Standing",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = EmeraldSuccess
+                                )
+                            }
+                        }
+                    }
+
+                    LinearProgressIndicator(
+                        progress = { overallReadiness / 100f },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(8.dp)
+                            .clip(RoundedCornerShape(4.dp)),
+                        color = EmeraldSuccess,
+                        trackColor = MaterialTheme.colorScheme.surface
+                    )
+
+                    Text(
+                        text = "Estimated qualification: ~${(remainingHours / 12.5f).toInt()} days based on active booster exchange velocity.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            // Dual Core Metrics: Watch Hours & Subscribers Breakdown
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // 1. Watch Hours
+                OutlinedCard(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, AmberGold.copy(alpha = 0.35f)),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.HourglassTop,
+                                contentDescription = null,
+                                tint = AmberBright,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                text = "%.0f%%".format(watchHoursProgress * 100),
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                color = AmberBright
+                            )
+                        }
+
+                        Text(
+                            text = "%.1fh".format(userStats.currentMonetizationWatchHours),
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "of 4,000h required",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "%.0fh needed".format(remainingHours),
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = AmberBright
+                        )
+                    }
+                }
+
+                // 2. Subscribers
+                OutlinedCard(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, EmeraldSuccess.copy(alpha = 0.35f)),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.People,
+                                contentDescription = null,
+                                tint = EmeraldSuccess,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                text = "${(subsProgress * 100).toInt()}%",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                color = EmeraldSuccess
+                            )
+                        }
+
+                        Text(
+                            text = "${userStats.currentSubscribers}",
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "of 1,000 subs threshold",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "$remainingSubs subs needed",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = EmeraldSuccess
+                        )
+                    }
+                }
+            }
+
+            // Lifetime Community Boost Impact Report
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = "Booster Exchange Performance",
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        ReportMetricItem(
+                            label = "Views Boosted",
+                            value = "${userStats.totalViewsBoosted}",
+                            color = CyanBright
+                        )
+                        ReportMetricItem(
+                            label = "Delivered Hours",
+                            value = "%.1fh".format(userStats.totalWatchHoursBoosted),
+                            color = AmberGold
+                        )
+                        ReportMetricItem(
+                            label = "Likes Gained",
+                            value = "+${userStats.totalLikesBoosted}",
+                            color = PinkNeon
+                        )
+                        ReportMetricItem(
+                            label = "Streak",
+                            value = "${userStats.dailyStreak} Days",
+                            color = EmeraldSuccess
+                        )
+                    }
+                }
+            }
+
+            // Export & Copy Buttons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Button(
+                    onClick = { copyReportSummary() },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = CyanNeon),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                        .testTag("copy_report_summary_btn")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ContentCopy,
+                        contentDescription = null,
+                        tint = Color.Black,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Copy Report", color = Color.Black, fontWeight = FontWeight.Bold)
+                }
+
+                Button(
+                    onClick = onDismiss,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                ) {
+                    Text("Done", color = MaterialTheme.colorScheme.onSurface)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReportMetricItem(
+    label: String,
+    value: String,
+    color: Color
+) {
+    Column {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+            color = color
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 10.sp
+        )
+    }
+}
